@@ -2,9 +2,13 @@ import { useState,useEffect } from 'react'
 import Search from './componets/Search'
 import Spinner from './componets/Spinner';
 import MovieCard from './componets/MovieCard';
+import { useDebounce } from 'react-use';
+import { updateSearchCount } from './appwrite';
+import Navbar from './componets/Navbar';
 
 const API_BASE_URL = "https://api.themoviedb.org/3";
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+
 const API_OPTIONS = {
   method: 'GET',
   headers: {
@@ -12,13 +16,19 @@ const API_OPTIONS = {
     Authorization: `Bearer ${API_KEY}`
   }
 }
+
 function App() {
-  const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
+  const [searchTerm, setSearchTerm] = useState('');
+
   const [movieList, setMovieList] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+
   const [trendingMovies, setTrendingMovies] = useState([]);
+
+  useDebounce(() => setDebouncedSearchTerm(searchTerm), 500, [searchTerm])
 
   const fetchMovies = async (query = '') => {
     setIsLoading(true);
@@ -44,7 +54,7 @@ function App() {
       }
 
       setMovieList(data.results || []);
-
+      updateSearchCount()
       if(query && data.results.length > 0) {
         await updateSearchCount(query, data.results[0]);
       }
@@ -56,14 +66,16 @@ function App() {
     }
   }
    useEffect(() => {
-    fetchMovies();
-  }, []);
+    fetchMovies(debouncedSearchTerm);
+  }, [debouncedSearchTerm]);
   return (
     <main>
+      <Navbar />
       <div className="pattern"/>
+      
       <div className="wrapper">
         <header>
-          <img src="./hero.png" alt="hero banner" />
+          <img src="./hero.png" alt="hero banner"  className='my-5'/>
         <h1>
           Find <span className='text-gradient'>Movies</span> You'll Enjoy Watching
         </h1>
